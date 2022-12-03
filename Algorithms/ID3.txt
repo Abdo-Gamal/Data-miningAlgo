@@ -1,0 +1,111 @@
+import pandas as pd
+import numpy as np
+from math import log
+import operator
+
+
+def getDataSet():
+    lines_set = open('C:\\Users\\Magic\\PycharmProjects\\pythonProject2\\DataSet').readlines()
+    labelLine = lines_set[0]
+    labels = labelLine.strip().split()
+    lines_set = lines_set[2:11]
+    dataSet = []
+    for line in lines_set:
+        data = line.split()
+        dataSet.append(data)
+    print('DataSet .. \n', dataSet)
+    print('Labels .. \n', labels)
+    return dataSet, labels
+
+
+# Calculate Shannon Entropy
+def calcShannonEnt(dataSet):
+    numEntries = len(dataSet)
+    labelCounts = {}
+    for feaVec in dataSet:
+        currentLabel = feaVec[-1]
+        if currentLabel not in labelCounts:
+            labelCounts[currentLabel] = 0
+        labelCounts[currentLabel] += 1
+    shannonEnt = 0.0
+    for key in labelCounts:
+        prob = float(labelCounts[key]) / numEntries
+        shannonEnt -= prob * log(prob, 2)
+    return shannonEnt
+
+
+def splitDataSet(dataSet, axis, value):
+    retDataSet = []
+    for featVec in dataSet:
+        if featVec[axis] == value:
+            reducedFeatVec = featVec[:axis]
+            reducedFeatVec.extend(featVec[axis + 1:])
+            retDataSet.append(reducedFeatVec)
+    return retDataSet
+
+
+def chooseBestFeatureToSplit(dataSet):
+    numFeatures = len(dataSet[0]) - 1  # because the last item in the dataset is the label
+    baseEntropy = calcShannonEnt(dataSet)
+    bestInfoGain = 0.0
+    bestFeature = -1
+    for i in range(numFeatures):
+        featList = [example[i] for example in dataSet]
+        uniqueVals = set(featList)
+        newEntropy = 0.0
+        for value in uniqueVals:
+            subDataSet = splitDataSet(dataSet, i, value)
+            prob = len(subDataSet) / float(len(dataSet))
+            newEntropy += prob * calcShannonEnt(subDataSet)
+        infoGain = baseEntropy - newEntropy
+        if infoGain > bestInfoGain:
+            bestInfoGain = infoGain
+            bestFeature = i
+    return bestFeature
+
+
+# Because we recursively build the decision tree is calculated according to the consumption of the attribute, so there may be the last attribute is used up, but the classification
+# Still not finished, this time will use the majority vote to calculate the node classification
+def majorityCnt(classList):
+    classCount = {}
+    for vote in classList:
+        if vote not in classCount.keys():
+            classCount[vote] = 0
+        classCount[vote] += 1
+    return max(classCount)
+
+
+def createTree(dataSet, labels):
+    classList = [example[-1] for example in dataSet]
+    if classList.count(classList[0]) == len(classList):  # If the categories are the same, stop dividing
+        return classList[0]
+    if len(dataSet[0]) == 1:  # All features have been used up
+        return majorityCnt(classList)
+    bestFeat = chooseBestFeatureToSplit(dataSet)
+    bestFeatLabel = labels[bestFeat]
+    myTree = {bestFeatLabel: {}}
+    del (labels[bestFeat])
+    featValues = [example[bestFeat] for example in dataSet]
+    uniqueVals = set(featValues)
+    for value in uniqueVals:
+        subLabels = labels[:]  # copied a bit to change the contents of the original list
+    myTree[bestFeatLabel][value] = createTree(splitDataSet(dataSet, bestFeat, value), subLabels)
+    return myTree
+
+
+def main():
+    data, label = getDataSet()
+    myTree = createTree(data, label)
+    print(myTree)
+
+
+if __name__ == '__main__':
+    main()
+
+
+'''
+    DataSet = open('C:\\Users\\Magic\\PycharmProjects\\pythonProject2\\DataSet').readlines()
+    DataArr = np.array(DataSet)
+    columns = np.array(DataSet.columns[:len(DataSet.columns) - 1])
+    return DataArr.tolist(), columns.tolist()  # Get data
+'''

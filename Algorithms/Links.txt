@@ -1,0 +1,19 @@
+Naive Bayes ..
+
+https://www.analyticsvidhya.com/blog/2021/01/a-guide-to-the-naive-bayes-algorithm/
+
+Apriori ..
+
+http://www.vucreations.com/articles/apriori-algorithm-from-scratch-Python.html?fbclid=IwAR0B_16aru0urqzNod0rzRvpO1fdduq4PBtuA9f2LBDAQnn64FruJO81Fm4
+
+ID3 ..
+
+https://sefiks.com/2017/11/20/a-step-by-step-id3-decision-tree-example/
+
+https://www.programmersought.com/article/99831441856/
+
+C4.5 ..
+
+https://sefiks.com/2018/05/13/a-step-by-step-c4-5-decision-tree-example/
+
+https://www.programmersought.com/article/8960195077/

@@ -1,0 +1,151 @@
+from numpy import *
+from scipy import *
+from math import log
+import operator
+
+
+# Calculating the enrichment entropy of a given data:
+def calcShannonEnt(dataSet):
+    numEntries = len(dataSet)
+    labelCounts = {}  # Category dictionary(the name of the category is the key, the number is the value)
+    for featVec in dataSet:
+        currentLabel = featVec[-1]
+        if currentLabel not in labelCounts.keys():  # Type not yet added to the dictionary
+            labelCounts[currentLabel] = 0
+        labelCounts[currentLabel] += 1
+    shannonEnt = 0.0
+    for key in labelCounts:  # Find each type of entropy
+        prob = float(labelCounts[key]) / numEntries  # Each type of number accounts for all ratios
+        shannonEnt -= prob * log(prob, 2)
+    return shannonEnt  #
+
+
+#  according to the given characteristics
+def splitDataSet(dataSet, axis, value):
+    retDataSet = []
+    for featVec in dataSet:  # According to the dataset matrix, the value of the axis column is equal to the value of the data set
+        if featVec[axis] == value:  # is equal to value, each behavior is a new list (remove the axis data)
+            reducedFeatVec = featVec[:axis]
+            reducedFeatVec.extend(featVec[axis + 1:])
+            retDataSet.append(reducedFeatVec)
+    return retDataSet  #
+
+
+# Select the best way to divide data sets
+def chooseBestFeatureToSplit(dataSet):
+    numFeatures = len(dataSet[0]) - 1  #
+    baseEntropy = calcShannonEnt(dataSet)
+    bestInfoGain = 0.0
+    bestFeature = -1
+    for i in range(numFeatures):  #
+        featList = [example[i] for example in dataSet]
+        uniqueVals = set(featList)  # ( )
+        newEntropy = 0.0
+        splitInfo = 0.0
+        for value in uniqueVals:  # entropy of each different value * their probability
+            subDataSet = splitDataSet(dataSet, i, value)
+            prob = len(subDataSet) / float(len(dataSet))  # Find the probability of this value in the i column attribute
+            newEntropy += prob * calcShannonEnt(subDataSet)  # icolumn attribute values ​​for the entropy summation
+            splitInfo -= prob * log(prob, 2)
+        infoGain = (
+                           baseEntropy - newEntropy) / splitInfo  # Find the information gain rate of the i-th column attribute
+        print(infoGain)
+        if (
+                infoGain > bestInfoGain):  # Save the information gain rate value with the highest information gain rate and the table below (column value i)
+            bestInfoGain = infoGain
+            bestFeature = i
+    return bestFeature
+
+
+# Find the category name with the most occurrences
+def majorityCnt(classList):
+    classCount = {}
+    for vote in classList:
+        if vote not in classCount.keys(): classCount[vote] = 0
+        classCount[vote] += 1
+    sortedClassCount = sorted(classCount.iteritems(), key=operator.itemgetter(1), reverse=True)
+    return sortedClassCount[0][0]
+
+
+#
+def createTree(dataSet, labels):
+    classList = [example[-1] for example in
+                 dataSet]  # Create a list of results for the training data that needs to be created (for example, the outermost list is [N, N, Y, Y, Y, N, Y])
+    if classList.count(classList[0]) == len(
+            classList):  # If all training data belongs to a category, return to the category
+        return classList[0]
+    if (len(dataSet[
+                0]) == 1):  # only gives category data (no attribute value data is given), returns the category name with the most occurrences
+        return majorityCnt(classList)
+
+    bestFeat = chooseBestFeatureToSplit(
+        dataSet)  # Select the attribute with the largest information gain score (the return value is the subscript of the attribute type list)
+    bestFeatLabel = labels[
+        bestFeat]  # Find the attribute name as the root node of the tree according to the following table
+    myTree = {bestFeatLabel: {}}  # Build an empty tree with the bestFeatLabel as the root node
+    del (labels[bestFeat])  # Delete the attribute of the root node that has been selected from the attribute list.
+    featValues = [example[bestFeat] for example in
+                  dataSet]  # Find the value of all training data for this attribute (create list)
+    uniqueVals = set(
+        featValues)  # Find all the collections of the property (the elements of the collection cannot be repeated)
+    for value in uniqueVals:  # Query the branches of the tree according to the value of the attribute
+        subLabels = labels[:]
+        myTree[bestFeatLabel][value] = createTree(splitDataSet(dataSet, bestFeat, value),
+                                                  subLabels)  # Recursively create trees according to each branch
+    return myTree  #
+
+
+# Class
+def classify(inputTree, featLabels, testVec):
+    firstStr = inputTree.keys()[0]
+    secondDict = inputTree[firstStr]
+    featIndex = featLabels.index(firstStr)
+    for key in secondDict.keys():
+        if testVec[featIndex] == key:
+            if type(secondDict[key]).__name__ == 'dict':
+                classLabel = classify(secondDict[key], featLabels, testVec)
+            else:
+                classLabel = secondDict[key]
+    return classLabel
+
+
+# Read the training data in the data file (generate a two-dimensional list)
+def createTrainData():
+    lines_set = open('C:\\Users\\Magic\\PycharmProjects\\pythonProject2\\DataSet').readlines()
+    labelLine = lines_set[0]
+    labels = labelLine.strip().split()
+    lines_set = lines_set[2:11]
+    dataSet = []
+    for line in lines_set:
+        data = line.split()
+        dataSet.append(data)
+
+    print('DataSet .. \n', dataSet)
+    print('Labels .. \n', labels)
+    return dataSet, labels
+
+
+# Read the test data in the data file (generate a two-dimensional list)
+def createTestData():
+    lines_set = open('C:\\Users\\Magic\\PycharmProjects\\pythonProject2\\DataSet').readlines()
+    lines_set = lines_set[15:22]
+    dataSet = []
+    for line in lines_set:
+        data = line.strip().split()
+        dataSet.append(data)
+    return dataSet
+
+
+def main():
+    myDat, labels = createTrainData()
+    myTree = createTree(myDat, labels)
+    print(myTree)
+    bootList = ['outlook', 'temperature', 'humidity', 'windy']
+    testList = createTestData()
+    for testData in testList:
+        dic = classify(myTree, bootList, testData)
+        print(dic)
+
+
+if __name__ == '__main__':
+    main()
